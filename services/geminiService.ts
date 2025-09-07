@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { DrawnCard, TarotInterpretation } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY as string });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 export async function getTarotReading(cards: DrawnCard[]): Promise<TarotInterpretation> {
   const [pastCard, presentCard, futureCard] = cards;
