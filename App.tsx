@@ -108,7 +108,7 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col items-center animate-fade-in">
              <h2 className="text-3xl text-amber-200 mb-2">Awaiting the Draw</h2>
-             <p className="text-amber-100/80 mb-8">Click the deck three times to reveal your fate.</p>
+             <p className="text-amber-100/80 mb-8">Картын багцыг гурав товшоод, заяа төөргөө нээ.</p>
              <div className="flex items-center justify-center space-x-4 mb-8 h-80 md:h-96">
                 {drawnCards.map((card, index) => (
                     <div key={card.id} className="w-48 h-80 md:w-60 md:h-96 border-2 border-dashed border-amber-300/30 rounded-xl flex items-center justify-center animate-fade-in">

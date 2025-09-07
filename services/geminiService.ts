@@ -1,8 +1,7 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { DrawnCard, TarotInterpretation } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+const ai = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY as string });
 
 export async function getTarotReading(cards: DrawnCard[]): Promise<TarotInterpretation> {
   const [pastCard, presentCard, futureCard] = cards;
@@ -14,9 +13,9 @@ export async function getTarotReading(cards: DrawnCard[]): Promise<TarotInterpre
     - Present: ${presentCard.name}
     - Future: ${futureCard.name}
 
-    Provide a concise, connected reading. 
+    Provide a concise, connected reading. Make it in Mongolian language.
     First, interpret each card in its position, reflecting on how they connect.
-    Then, provide a short, overall summary of the reading's message.
+    Then, provide a short, overall summary of the reading's message. 
   `;
   
   try {
