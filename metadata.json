@@ -1,0 +1,5 @@
+{
+  "name": "Mystic Oracle: AI Tarot Reader",
+  "description": "An elegant and modern tarot card reading application powered by Gemini. Draw three cards for a Past, Present, and Future reading and receive a personalized, insightful interpretation from an AI oracle.",
+  "requestFramePermissions": []
+}
