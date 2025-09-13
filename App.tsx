@@ -93,13 +93,13 @@ const App: React.FC = () => {
           <div className="text-center animate-fade-in">
             <h1 className="text-5xl md:text-7xl font-bold text-amber-200 mb-4">Нууцлаг мэргэч</h1>
             <p className="text-lg md:text-xl text-amber-100/80 mb-8 max-w-2xl mx-auto">
-              Дижитал огторгуйн мандал руу гүн ширт. Өнгөрснөө тодруул, Одоогоо ухаар, Ирээдүйгээ нээ..
+              Дижитал огторгуйн мандал руу гүн ширт. Өнгөрснөө тодруул, Одоогоо ухаар, Ирээдүйгээ нээ.
             </p>
             <button
               onClick={startGame}
               className="bg-amber-400 text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
             >
-              Begin Your Reading
+              Эхлүүлэх
             </button>
           </div>
         );
@@ -107,8 +107,9 @@ const App: React.FC = () => {
       case 'drawing':
         return (
           <div className="flex flex-col items-center animate-fade-in">
-             <h2 className="text-3xl text-amber-200 mb-2">Awaiting the Draw</h2>
-             <p className="text-amber-100/80 mb-8">Картын багцыг гурав товшоод, заяа төөргөө нээ.</p>
+             <h2 className="text-3xl text-amber-200 mb-2">Таныг хүлээж байна</h2>
+             <p className="text-amber-100/80 mb-8">Хөзрийн багцыг гурав товшоод, заяа төөргөө нээ.</p>
+             <p className="text-amber-100/80 mb-8">(Нэг дор олон дахин туршихгүй байхыг зөвлөж байна)</p>
              <div className="flex items-center justify-center space-x-4 mb-8 h-80 md:h-96">
                 {drawnCards.map((card, index) => (
                     <div key={card.id} className="w-48 h-80 md:w-60 md:h-96 border-2 border-dashed border-amber-300/30 rounded-xl flex items-center justify-center animate-fade-in">
@@ -125,7 +126,7 @@ const App: React.FC = () => {
                 <div className="absolute w-full h-full rounded-xl bg-indigo-900 border-2 border-amber-300/50 -translate-x-2 -translate-y-2 transition-transform duration-300 group-hover:translate-x-0 group-hover:translate-y-0"></div>
                 <div className="absolute w-full h-full rounded-xl bg-indigo-900 border-2 border-amber-300/50 -translate-x-1 -translate-y-1 transition-transform duration-300 group-hover:translate-x-0 group-hover:translate-y-0"></div>
                  <div className="relative w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900 border-2 border-amber-300/70 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                     <p className="text-amber-200 font-bold">Draw a Card</p>
+                     <p className="text-amber-200 font-bold">Хөзрийн багцыг товших</p>
                  </div>
              </div>
           </div>
@@ -137,12 +138,12 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col items-center w-full animate-fade-in">
               <h2 className="text-3xl text-amber-200 mb-2">
-                {gameState === 'reading' && 'Reveal Your Cards'}
+                {gameState === 'reading' && 'Хөзрүүдээ нээнэ үү!'}
                 {gameState === 'interpreting' && 'Consulting the Oracle...'}
                 {gameState === 'finished' && 'Your Reading is Complete'}
               </h2>
                <p className="text-amber-100/80 mb-8 h-6">
-                {gameState === 'reading' && 'Click each card to turn it over.'}
+                {gameState === 'reading' && 'Хөзөр болгон дээр товшиж нээнэ.'}
                </p>
                <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-8">
                 {drawnCards.map(card => (
