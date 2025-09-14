@@ -1,4 +1,3 @@
-
 export interface TarotCard {
   name: string;
 }
@@ -19,4 +18,11 @@ export interface TarotInterpretation {
   present: string;
   future: string;
   summary: string;
+}
+
+// FIX: Add missing User interface to resolve type errors.
+export interface User {
+  name: string;
+  email: string;
+  picture?: string;
 }
