@@ -1,13 +1,13 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, DrawnCard, TarotInterpretation } from './types';
+import { GameState, DrawnCard, TarotInterpretation, ReadingType } from './types';
 import { TAROT_DECK } from './constants';
-import { getTarotReading } from './services/geminiService';
+import { getTarotReading, getDailyReading } from './services/geminiService';
 import TarotCardComponent from './components/TarotCard';
 import LoadingSpinner from './components/LoadingSpinner';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('welcome');
+  const [readingType, setReadingType] = useState<ReadingType | null>(null);
   const [deck, setDeck] = useState([...TAROT_DECK]);
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [interpretation, setInterpretation] = useState<TarotInterpretation | null>(null);
@@ -23,7 +23,16 @@ const App: React.FC = () => {
     return shuffled;
   };
   
-  const startGame = () => {
+  const resetGame = () => {
+    setGameState('welcome');
+    setReadingType(null);
+    setError(null);
+    setInterpretation(null);
+    setDrawnCards([]);
+  };
+
+  const startGame = (type: ReadingType) => {
+    setReadingType(type);
     setError(null);
     setInterpretation(null);
     setDrawnCards([]);
@@ -31,10 +40,21 @@ const App: React.FC = () => {
     setGameState('drawing');
   };
 
-  const drawCard = useCallback(() => {
-    if (drawnCards.length >= 3 || deck.length === 0) return;
+  const startNewReadingSameType = () => {
+    if (readingType) {
+      startGame(readingType);
+    }
+  };
 
-    const positions: Array<'Past' | 'Present' | 'Future'> = ['Past', 'Present', 'Future'];
+  const drawCard = useCallback(() => {
+    if (!readingType || deck.length === 0) return;
+
+    const maxCards = readingType === 'three-card' ? 3 : 1;
+    if (drawnCards.length >= maxCards) return;
+
+    const positions: Array<'Past' | 'Present' | 'Future' | 'Daily'> = 
+        readingType === 'three-card' ? ['Past', 'Present', 'Future'] : ['Daily'];
+        
     const newCard = deck.pop();
     if (newCard) {
       const drawnCard: DrawnCard = {
@@ -45,13 +65,15 @@ const App: React.FC = () => {
       };
       setDrawnCards(prev => [...prev, drawnCard]);
     }
-  }, [deck, drawnCards]);
+  }, [deck, drawnCards, readingType]);
   
   useEffect(() => {
-    if(drawnCards.length === 3) {
+    if (!readingType) return;
+    const maxCards = readingType === 'three-card' ? 3 : 1;
+    if(drawnCards.length === maxCards) {
       setGameState('reading');
     }
-  }, [drawnCards]);
+  }, [drawnCards, readingType]);
 
   const handleFlipCard = (cardId: number) => {
     const newDrawnCards = drawnCards.map(c => 
@@ -59,13 +81,14 @@ const App: React.FC = () => {
     );
     setDrawnCards(newDrawnCards);
 
-    // Check if all cards are now flipped to trigger reading
-    if (newDrawnCards.every(c => c.isFlipped)) {
-        fetchInterpretation(newDrawnCards);
+    if (readingType === 'one-card' && newDrawnCards[0].isFlipped) {
+        fetchDailyInterpretation(newDrawnCards[0]);
+    } else if (readingType === 'three-card' && newDrawnCards.every(c => c.isFlipped)) {
+        fetchThreeCardInterpretation(newDrawnCards);
     }
   };
 
-  const fetchInterpretation = useCallback(async (cards: DrawnCard[]) => {
+  const fetchThreeCardInterpretation = useCallback(async (cards: DrawnCard[]) => {
       setGameState('interpreting');
       setIsLoading(true);
       setError(null);
@@ -85,6 +108,23 @@ const App: React.FC = () => {
         setIsLoading(false);
       }
   }, []);
+  
+  const fetchDailyInterpretation = useCallback(async (card: DrawnCard) => {
+      setGameState('interpreting');
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await getDailyReading(card);
+        setDrawnCards(prevCards => prevCards.map(c => 
+            c.id === card.id ? { ...c, interpretation: result } : c
+        ));
+        setGameState('finished');
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+  }, []);
 
   const renderGameState = () => {
     switch (gameState) {
@@ -93,32 +133,48 @@ const App: React.FC = () => {
           <div className="text-center animate-fade-in">
             <h1 className="text-5xl md:text-7xl font-bold text-amber-200 mb-4">Нууцлаг мэргэч</h1>
             <p className="text-lg md:text-xl text-amber-100/80 mb-8 max-w-2xl mx-auto">
-              Дижитал огторгуйн мандал руу гүн ширт. Өнгөрснөө тодруул, Одоогоо ухаар, Ирээдүйгээ нээ.
+              Хувь тавилангийнхаа нууцыг тайл. Ямар мэргэ үзүүлэхээ сонгоно уу.
             </p>
-            <button
-              onClick={startGame}
-              className="bg-amber-400 text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
-            >
-              Эхлүүлэх
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => startGame('three-card')}
+                className="bg-amber-400 text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
+              >
+                Гурван хөзрийн мэргэ (Өнгөрсөн, Одоо, Ирээдүй)
+              </button>
+              <button
+                onClick={() => startGame('one-card')}
+                className="bg-purple-500 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-purple-500/20 hover:bg-purple-400 transition-all duration-300 transform hover:scale-105"
+              >
+                Өдөр тутмын зурхай (Нэг хөзөр)
+              </button>
+            </div>
           </div>
         );
       
       case 'drawing':
+        const maxCards = readingType === 'three-card' ? 3 : 1;
+        const placeholders = readingType === 'three-card' 
+            ? ['Өнгөрсөн', 'Одоо', 'Ирээдүй'] 
+            : ['Таны өдрийн хөзөр'];
         return (
           <div className="flex flex-col items-center animate-fade-in">
              <h2 className="text-3xl text-amber-200 mb-2">Таныг хүлээж байна</h2>
-             <p className="text-amber-100/80 mb-8">Хөзрийн багцыг гурав товшоод, заяа төөргөө нээ.</p>
-             <p className="text-amber-100/80 mb-8">(Нэг дор олон дахин туршихгүй байхыг зөвлөж байна)</p>
-             <div className="flex items-center justify-center space-x-4 mb-8 h-80 md:h-96">
+             <p className="text-amber-100/80 mb-8">
+                {readingType === 'three-card' 
+                    ? 'Хөзрийн багцыг гурав товшоод, заяа төөргөө нээ.'
+                    : 'Хөзрийн багцыг товшоод, өдрийн зурхайгаа нээ.'
+                }
+             </p>
+             <div className="flex flex-wrap items-center justify-center gap-4 mb-8 h-80 md:h-96">
                 {drawnCards.map((card, index) => (
                     <div key={card.id} className="w-48 h-80 md:w-60 md:h-96 border-2 border-dashed border-amber-300/30 rounded-xl flex items-center justify-center animate-fade-in">
-                       <p className="text-amber-200/50">{['Past', 'Present', 'Future'][index]}</p>
+                       <p className="text-amber-200/50">{placeholders[index]}</p>
                     </div>
                 ))}
-                {Array(3 - drawnCards.length).fill(0).map((_, index) => (
+                {Array(maxCards - drawnCards.length).fill(0).map((_, index) => (
                      <div key={index} className="w-48 h-80 md:w-60 md:h-96 border-2 border-dashed border-amber-300/30 rounded-xl flex items-center justify-center">
-                         <p className="text-amber-200/50">{['Past', 'Present', 'Future'][drawnCards.length + index]}</p>
+                         <p className="text-amber-200/50">{placeholders[drawnCards.length + index]}</p>
                      </div>
                 ))}
              </div>
@@ -138,14 +194,14 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col items-center w-full animate-fade-in">
               <h2 className="text-3xl text-amber-200 mb-2">
-                {gameState === 'reading' && 'Хөзрүүдээ нээнэ үү!'}
-                {gameState === 'interpreting' && 'Consulting the Oracle...'}
-                {gameState === 'finished' && 'Your Reading is Complete'}
+                {gameState === 'reading' && 'Хөзрөө нээнэ үү!'}
+                {gameState === 'interpreting' && 'Зурхайчийн зөвлөгөө...'}
+                {gameState === 'finished' && 'Таны мэргэ бэлэн боллоо'}
               </h2>
                <p className="text-amber-100/80 mb-8 h-6">
-                {gameState === 'reading' && 'Хөзөр болгон дээр товшиж нээнэ.'}
+                {gameState === 'reading' && 'Хөзөр дээр товшиж нээнэ үү.'}
                </p>
-               <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-8">
+               <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-8 mb-8">
                 {drawnCards.map(card => (
                   <TarotCardComponent key={card.id} card={card} onFlip={() => handleFlipCard(card.id)} canFlip={gameState === 'reading'} />
                 ))}
@@ -155,16 +211,28 @@ const App: React.FC = () => {
                
                {error && <p className="text-red-400 bg-red-900/50 p-3 rounded-lg">{error}</p>}
                
-               {gameState === 'finished' && interpretation && (
-                  <div className="max-w-3xl text-center bg-black/30 p-6 rounded-xl animate-fade-in">
-                      <h3 className="text-2xl text-amber-300 mb-4">Summary</h3>
-                      <p className="text-amber-100/90 whitespace-pre-wrap">{interpretation.summary}</p>
-                      <button
-                        onClick={startGame}
-                        className="mt-6 bg-amber-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
-                      >
-                       New Reading
-                      </button>
+               {gameState === 'finished' && (
+                  <div className="max-w-3xl w-full text-center p-6 rounded-xl animate-fade-in">
+                      {readingType === 'three-card' && interpretation && (
+                          <div className="bg-black/30 p-6 rounded-xl mb-6">
+                            <h3 className="text-2xl text-amber-300 mb-4">Товч дүгнэлт</h3>
+                            <p className="text-amber-100/90 whitespace-pre-wrap">{interpretation.summary}</p>
+                          </div>
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button
+                          onClick={startNewReadingSameType}
+                          className="bg-amber-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
+                        >
+                          {readingType === 'one-card' ? 'Дахин өдрийн зурхай' : 'Дахин гурван хөзрийн мэргэ'}
+                        </button>
+                        <button
+                          onClick={resetGame}
+                          className="bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow-lg shadow-purple-500/20 hover:bg-purple-400 transition-all duration-300 transform hover:scale-105"
+                        >
+                          Нүүр хуудас
+                        </button>
+                      </div>
                   </div>
                )}
           </div>

@@ -3,6 +3,26 @@ import { DrawnCard, TarotInterpretation } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
+export async function getDailyReading(card: DrawnCard): Promise<string> {
+  const prompt = `
+    You are an expert tarot reader with a mystical, wise, and insightful tone.
+    A user has drawn one card for their daily fortune: "${card.name}".
+    Provide a concise, helpful, and inspiring interpretation for their day based on this single card. The reading should be in Mongolian.
+    Focus on practical advice or a theme for the day.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    return response.text.trim();
+  } catch (error) {
+    console.error("Error fetching daily reading from Gemini:", error);
+    throw new Error("The celestial energies are clouded. Please try again later.");
+  }
+}
+
 export async function getTarotReading(cards: DrawnCard[]): Promise<TarotInterpretation> {
   const [pastCard, presentCard, futureCard] = cards;
 
