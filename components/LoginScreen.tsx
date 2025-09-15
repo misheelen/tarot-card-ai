@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 
-interface CouponScreenProps {
-  onCouponSubmit: (code: string) => boolean;
+interface UnlockScreenProps {
+  onUnlock: (code: string) => boolean;
 }
 
-const CouponScreen: React.FC<CouponScreenProps> = ({ onCouponSubmit }) => {
+const UnlockScreen: React.FC<UnlockScreenProps> = ({ onUnlock }) => {
   const [coupon, setCoupon] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const success = onCouponSubmit(coupon);
-    setError(null);
+    const success = onUnlock(coupon);
     if (!success) {
       setError('The stars do not align for this code. Please try again.');
       setCoupon('');
@@ -22,9 +21,9 @@ const CouponScreen: React.FC<CouponScreenProps> = ({ onCouponSubmit }) => {
 
   return (
     <div className="text-center animate-fade-in flex flex-col items-center">
-      <h1 className="text-5xl md:text-7xl font-bold text-amber-200 mb-4">Таро хөзрийн тайлалч</h1>
-      <p className="text-lg md:text-xl text-amber-100/80 mb-12 max-w-2xl mx-auto">
-        Нууц кодоо оруулж, Таро тайллыг ашиглана уу.
+      <h3 className="text-3xl font-bold text-amber-200 mb-4">Бүрэн тайллыг нээх</h3>
+      <p className="text-lg text-amber-100/80 mb-8 max-w-lg mx-auto">
+        Нууц кодоо оруулж, хувь тавилангийнхаа гүн гүнзгий нууцыг тайлаарай.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 items-center w-full max-w-sm">
         <input
@@ -45,11 +44,8 @@ const CouponScreen: React.FC<CouponScreenProps> = ({ onCouponSubmit }) => {
       {error && (
         <p className="text-red-400 mt-4 bg-red-900/30 px-4 py-2 rounded-md">{error}</p>
       )}
-      {/* <p className="text-xs text-gray-400 mt-8 max-w-md">
-         Энэ бол хувийн уншлага. Таны код танд хиймэл оюун ухаанаар ажилладаг зөнчтэй харьцах боломжийг олгоно.
-      </p>*/}
     </div>
   );
 };
 
-export default CouponScreen;
+export default UnlockScreen;

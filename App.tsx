@@ -4,32 +4,32 @@ import { TAROT_DECK } from './constants';
 import { getTarotReading, getDailyReading } from './services/geminiService';
 import TarotCardComponent from './components/TarotCard';
 import LoadingSpinner from './components/LoadingSpinner';
-import CouponScreen from './components/LoginScreen';
+import UnlockScreen from './components/LoginScreen';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('welcome');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [readingType, setReadingType] = useState<ReadingType | null>(null);
   const [deck, setDeck] = useState([...TAROT_DECK]);
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [interpretation, setInterpretation] = useState<TarotInterpretation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFullReadingUnlocked, setIsFullReadingUnlocked] = useState(false);
+  const [showUnlockForm, setShowUnlockForm] = useState(false);
   
   useEffect(() => {
-    const unlocked = localStorage.getItem('mystic-oracle-unlocked');
+    const unlocked = localStorage.getItem('mystic-oracle-full-unlocked');
     if (unlocked === 'true') {
-      setIsAuthenticated(true);
+      setIsFullReadingUnlocked(true);
     }
-    setIsAuthLoading(false);
   }, []);
 
-  const handleCouponSubmit = (code: string): boolean => {
+  const handleUnlockSubmit = (code: string): boolean => {
     const validCoupon = process.env.COUPON_KEY;
     if (validCoupon && code.trim() === validCoupon) {
-      localStorage.setItem('mystic-oracle-unlocked', 'true');
-      setIsAuthenticated(true);
+      localStorage.setItem('mystic-oracle-full-unlocked', 'true');
+      setIsFullReadingUnlocked(true);
+      setShowUnlockForm(false);
       return true;
     }
     return false;
@@ -50,6 +50,7 @@ const App: React.FC = () => {
     setError(null);
     setInterpretation(null);
     setDrawnCards([]);
+    setShowUnlockForm(false);
   };
 
   const startGame = (type: ReadingType) => {
@@ -59,6 +60,7 @@ const App: React.FC = () => {
     setDrawnCards([]);
     setDeck(shuffleDeck());
     setGameState('drawing');
+    setShowUnlockForm(false);
   };
 
   const startNewReadingSameType = () => {
@@ -156,18 +158,11 @@ const App: React.FC = () => {
     }
   }, [drawnCards, gameState, readingType, fetchDailyInterpretation, fetchThreeCardInterpretation]);
 
-  const renderContent = () => {
-     if (isAuthLoading) {
-      return <LoadingSpinner />;
-    }
-
-    if (!isAuthenticated) {
-      return <CouponScreen onCouponSubmit={handleCouponSubmit} />;
-    }
-
-    return renderGameState();
-  }
-
+  const truncateText = (text: string | undefined, length: number = 70): string => {
+    if (!text) return 'The vision is clouding...';
+    if (text.length <= length) return text;
+    return text.substring(0, text.lastIndexOf(' ', length)) + '...';
+  };
 
   const renderGameState = () => {
     switch (gameState) {
@@ -244,41 +239,70 @@ const App: React.FC = () => {
                <p className="text-amber-100/80 mb-8 h-6">
                 {gameState === 'reading' && 'Хөзөр дээр товшиж нээнэ үү.'}
                 {gameState === 'interpreting' && 'Хөзрүүдийг тайлж байна...'}
-                {gameState === 'finished' && !error && 'Доорх тайллыг уншина уу.'}
+                {gameState === 'finished' && !error && (isFullReadingUnlocked ? 'Доорх тайллыг уншина уу.' : 'Бүрэн тайллыг нээж уншина уу.')}
                </p>
                <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-8 mb-8">
-                {drawnCards.map(card => (
-                  <TarotCardComponent key={card.id} card={card} onFlip={() => handleFlipCard(card.id)} canFlip={gameState === 'reading'} />
-                ))}
+                {drawnCards.map(card => {
+                  const cardInterpretation = (gameState === 'finished' && !isFullReadingUnlocked)
+                    ? truncateText(card.interpretation)
+                    : card.interpretation;
+                  return (
+                    <TarotCardComponent 
+                      key={card.id} 
+                      card={{...card, interpretation: cardInterpretation}} 
+                      onFlip={() => handleFlipCard(card.id)} 
+                      canFlip={gameState === 'reading'} 
+                    />
+                  );
+                })}
                </div>
                
                {isLoading && <LoadingSpinner />}
                
                {error && <p className="text-red-400 bg-red-900/50 p-3 rounded-lg">{error}</p>}
                
-               {gameState === 'finished' && (
-                  <div className="max-w-3xl w-full text-center p-6 rounded-xl animate-fade-in">
-                      {readingType === 'three-card' && interpretation && (
-                          <div className="bg-black/30 p-6 rounded-xl mb-6">
-                            <h3 className="text-2xl text-amber-300 mb-4">Товч дүгнэлт</h3>
-                            <p className="text-amber-100/90 whitespace-pre-wrap">{interpretation.summary}</p>
-                          </div>
+               {gameState === 'finished' && !error && (
+                  isFullReadingUnlocked ? (
+                    <div className="max-w-3xl w-full text-center p-6 rounded-xl animate-fade-in">
+                        {readingType === 'three-card' && interpretation && (
+                            <div className="bg-black/30 p-6 rounded-xl mb-6">
+                              <h3 className="text-2xl text-amber-300 mb-4">Товч дүгнэлт</h3>
+                              <p className="text-amber-100/90 whitespace-pre-wrap">{interpretation.summary}</p>
+                            </div>
+                        )}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                          <button
+                            onClick={startNewReadingSameType}
+                            className="bg-amber-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
+                          >
+                            {readingType === 'one-card' ? 'Дахин өдрийн зурхай' : 'Дахин гурван хөзрийн тайлал'}
+                          </button>
+                          <button
+                            onClick={resetGame}
+                            className="bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow-lg shadow-purple-500/20 hover:bg-purple-400 transition-all duration-300 transform hover:scale-105"
+                          >
+                            Нүүр хуудасруу буцах
+                          </button>
+                        </div>
+                    </div>
+                  ) : (
+                    <div className="max-w-3xl w-full text-center p-6 rounded-xl animate-fade-in">
+                      {showUnlockForm ? (
+                        <UnlockScreen onUnlock={handleUnlockSubmit} />
+                      ) : (
+                        <div className="animate-fade-in">
+                          <h3 className="text-2xl text-amber-300 mb-4">Тайллын үргэлжлэлийг үзэх...</h3>
+                          <p className="text-amber-100/80 mb-6">Нууц кодоо оруулж, хувь заяаныхаа бүрэн тайллыг нээнэ үү.</p>
+                          <button
+                            onClick={() => setShowUnlockForm(true)}
+                            className="bg-amber-400 text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
+                          >
+                            Бүрэн тайллыг нээх
+                          </button>
+                        </div>
                       )}
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button
-                          onClick={startNewReadingSameType}
-                          className="bg-amber-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
-                        >
-                          {readingType === 'one-card' ? 'Дахин өдрийн зурхай' : 'Дахин гурван хөзрийн тайлал'}
-                        </button>
-                        <button
-                          onClick={resetGame}
-                          className="bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow-lg shadow-purple-500/20 hover:bg-purple-400 transition-all duration-300 transform hover:scale-105"
-                        >
-                          Нүүр хуудасруу буцах
-                        </button>
-                      </div>
-                  </div>
+                    </div>
+                  )
                )}
           </div>
         );
@@ -291,7 +315,7 @@ const App: React.FC = () => {
     <main className="min-h-screen w-full bg-gray-900 text-white flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-radial from-indigo-900 via-purple-950 to-slate-900">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2032%2032%22%20width=%2232%22%20height=%2232%22%20fill=%22none%22%20stroke=%22%23a78bfa80%22%3E%3Cpath%20d=%22M0%20.5%20L32%20.5%20M.5%200%20L.5%2032%22/%3E%3C/svg%3E')] opacity-10"></div>
       <div className="relative z-10 w-full flex items-center justify-center min-h-screen">
-         {renderContent()}
+         {renderGameState()}
       </div>
       <style>{`
         .perspective-1000 { perspective: 1000px; }
