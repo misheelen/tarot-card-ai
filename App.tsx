@@ -25,7 +25,9 @@ const App: React.FC = () => {
   }, []);
 
   const handleUnlockSubmit = (code: string): boolean => {
-    const validCoupon = process.env.COUPON_KEY;
+    // const validCoupon = process.env.COUPON_KEY;
+    const testCoupon = 'Mystic25';
+    const validCoupon = testCoupon; 
     if (validCoupon && code.trim() === validCoupon) {
       localStorage.setItem('mystic-oracle-full-unlocked', 'true');
       setIsFullReadingUnlocked(true);
@@ -271,12 +273,6 @@ const App: React.FC = () => {
                             </div>
                         )}
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                          <button
-                            onClick={startNewReadingSameType}
-                            className="bg-amber-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg shadow-amber-500/20 hover:bg-amber-300 transition-all duration-300 transform hover:scale-105"
-                          >
-                            {readingType === 'one-card' ? 'Дахин өдрийн зурхай' : 'Дахин гурван хөзрийн тайлал'}
-                          </button>
                           <button
                             onClick={resetGame}
                             className="bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow-lg shadow-purple-500/20 hover:bg-purple-400 transition-all duration-300 transform hover:scale-105"
